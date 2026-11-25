@@ -319,12 +319,11 @@ class ByteStreamer:
             async def fetch(off):
                 nonlocal media_session
                 try:
-                    return await media_session.invoke(
-                        raw.functions.upload.GetFile(
-                            location=location,
-                            offset=off,
-                            limit=chunk_size,
+                    return await asyncio.wait_for(
+                        media_session.invoke(
+                            raw.functions.upload.GetFile(location=location, offset=off, limit=chunk_size)
                         ),
+                        timeout=30,
                     )
                 except Exception as e:
                     # A cached media session can go stale if Telegram drops it
@@ -340,12 +339,11 @@ class ByteStreamer:
                         client,
                         file_id,
                     )
-                    return await media_session.invoke(
-                        raw.functions.upload.GetFile(
-                            location=location,
-                            offset=off,
-                            limit=chunk_size,
+                    return await asyncio.wait_for(
+                        media_session.invoke(
+                            raw.functions.upload.GetFile(location=location, offset=off, limit=chunk_size)
                         ),
+                        timeout=30,
                     )
 
             r = await fetch(offset)

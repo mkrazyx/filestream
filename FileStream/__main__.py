@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import asyncio
 import logging
 import traceback
@@ -46,8 +47,21 @@ logging.getLogger("pyrogram").setLevel(logging.ERROR)
 # FIXED: Added request logging middleware to track UptimeRobot / external pings in console
 @web.middleware
 async def request_logger_middleware(request, handler):
-    logging.info(f"[Ping] Incoming request: {request.method} {request.path} from {request.remote}")
-    return await handler(request)
+    t0, status = time.monotonic(), "ERR"
+    try:
+        resp = await handler(request)
+        status = resp.status
+        return resp
+    except web.HTTPException as e:
+        status = e.status
+        raise
+    finally:
+        logging.info(
+            f"[REQ] {request.method} {request.path} -> {status} "
+            f"{(time.monotonic() - t0) * 1000:.0f}ms "
+            f"ip={request.headers.get('X-Forwarded-For', request.remote)} "
+            f"range={request.headers.get('Range', '-')}"
+        )
 
 # Pass the logging middleware into the web server application instance
 _app = web_server()
@@ -65,6 +79,11 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # --------------------------------------------------------------------
 async def start_services():
     print("\n------------------- Starting as Primary Server -------------------\n")
+
+    print("--------------------- Initializing Web Server (first) ---------------")
+    await server.setup()
+    await web.TCPSite(server, Server.BIND_ADDRESS, Server.PORT).start()
+    print("------------------------------ DONE ------------------------------\n")
 
     print("-------------------- Initializing Telegram Bot --------------------")
     await FileStream.start()
@@ -89,11 +108,6 @@ async def start_services():
 
     print("---------------------- Initializing Clients ----------------------")
     await initialize_clients()
-    print("------------------------------ DONE ------------------------------\n")
-
-    print("--------------------- Initializing Web Server ---------------------")
-    await server.setup()
-    await web.TCPSite(server, Server.BIND_ADDRESS, Server.PORT).start()
     print("------------------------------ DONE ------------------------------\n")
 
     print("------------------------- Service Started -------------------------")

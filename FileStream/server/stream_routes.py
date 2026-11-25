@@ -293,11 +293,19 @@ async def mediainfo_route_handler(request: web.Request):
     except Exception as e:
         return web.Response(text=f"Error generating MediaInfo: {str(e)}", status=500)
         
+# Max simultaneous /dl/ streams; extra requests get 503 + Retry-After
+STREAM_LIMIT = asyncio.Semaphore(10)
+
 @routes.get("/dl/{path}", allow_head=True)
 async def dl_handler(request: web.Request):
     try:
         path = request.match_info["path"]
-        return await media_streamer(request, path)
+        if not work_loads or STREAM_LIMIT.locked():
+            raise web.HTTPServiceUnavailable(headers={"Retry-After": "3"})
+        async with STREAM_LIMIT:
+            return await media_streamer(request, path)
+    except web.HTTPException:
+        raise
     except InvalidHash as e:
         raise web.HTTPForbidden(text=e.message)
     except FIleNotFound as e:
@@ -416,6 +424,10 @@ async def media_streamer(request: web.Request, db_id: str):
     except Exception as e:
         logging.error(f"Error while writing response chunk for {file_name}: {e}")
     finally:
+        try:
+            await body.aclose()  # releases work_loads even on early disconnect
+        except Exception:
+            pass
         try:
             await response.write_eof()
         except (ConnectionResetError, BrokenPipeError, RuntimeError):

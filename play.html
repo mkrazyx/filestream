@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔆彡⟨ HEROFLiX ⟩彡🔆</title>
+
+<link rel="icon" href="https://i.ibb.co/vxJD4dHK/0e76d1ae7331ca3964dd169b8b5c2f10.jpg" type="image/x-icon">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&display=swap');
+
+body {
+    margin: 0;
+    font-family: 'Josefin Sans', sans-serif;
+    color: white;
+    user-select: none;
+    background-color: #0b0f19;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: url('https://i.ibb.co/qMqgBPDY/e44bf8ca9423beeda43aa3367cfb878a.jpg') center/cover no-repeat;
+    filter: blur(35px) brightness(0.28);
+    transform: scale(1.15);
+    z-index: -1;
+}
+
+nav {
+    padding: 18px 10px;
+    text-align: center;
+    background: rgba(11, 15, 25, 0.4);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+nav h3 { font-size: 24px; font-weight: 700; color: #1db954; letter-spacing: 1px; }
+
+.main-container {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 900px;
+    margin: 25px auto;
+    padding: 0 15px;
+}
+
+.player-card {
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+}
+
+/* ==========================================================
+   FULLSCREEN MODE STYLING OVERRIDES
+   ========================================================== */
+#playerMainCard:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #000;
+}
+#playerMainCard:fullscreen .video-wrapper {
+    flex-grow: 1;
+    border-radius: 0;
+    border: none;
+    display: flex;
+    align-items: center;
+}
+#playerMainCard:fullscreen .control-bar {
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Strict 18:9 Video Box */
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 18 / 9;
+    background: #000;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    border: 2px solid rgba(29, 185, 84, 0.3);
+    border-bottom: none;
+    cursor: pointer;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* ==========================================================
+   LOADING SPINNER OVERLAY
+   ========================================================== */
+#loadingSpinner {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px; height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top: 4px solid #ff5722;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 15;
+    display: none;
+}
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Audio Controller Auto-Hide */
+.audio-fade {
+    opacity: 1;
+    transition: opacity 0.35s ease;
+}
+
+.hide-audio {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================================
+   VERTICAL VOLUME SLIDER CONTAINER
+   ========================================================== */
+.vertical-volume-container {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 20;
+}
+
+.vertical-slider {
+    writing-mode: bt-lr;
+    -webkit-appearance: slider-vertical;
+    width: 6px;
+    height: 75px;
+    accent-color: #ff5722;
+    cursor: pointer;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    outline: none;
+    border: none;
+}
+
+.volume-icon-btn {
+    background: #111;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+.volume-icon-btn:hover { background: #ff5722; }
+.volume-icon-btn svg { width: 16px; height: 16px; fill: #ff5722; }
+.volume-icon-btn:hover svg { fill: #fff; }
+
+/* Separate Control Bar Below Video */
+.control-bar {
+    background: rgba(11, 15, 25, 0.9);
+    border: 2px solid rgba(29, 185, 84, 0.3);
+    border-top: 1px solid rgba(29, 185, 84, 0.2);
+    border-radius: 0 0 16px 16px;
+    padding: 14px 18px;
+    backdrop-filter: blur(12px);
+}
+
+/* ==========================================================
+   PROGRESS BAR CONTAINER & INDICATOR
+   ========================================================== */
+.progress-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    position: relative;
+    touch-action: none;
+}
+.progress-bar {
+    height: 100%;
+    background: #0084ff;
+    width: 0%;
+    border-radius: 4px;
+    position: relative;
+    pointer-events: none;
+}
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -7px;
+    top: -5px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    background-image: radial-gradient(circle, #0084ff 4px, transparent 4.5px);
+}
+
+/* Controls Buttons Row */
+.controls-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap; /* Prevent wrapping */
+}
+
+/* ==========================================================
+   GLOBAL CIRCULAR CONTROL BUTTON STYLING
+   ========================================================== */
+.ctrl-btn {
+    background: #1a1a1a;
+    border: none;
+    color: #ffffff;
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.ctrl-btn:hover {
+    background: #1db954;
+    color: #0b0f19;
+    transform: scale(1.08);
+}
+.ctrl-btn svg { width: 28px; height: 28px; fill: currentColor; }
+
+.time-display {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-left: 6px;
+    margin-right: auto;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* ==========================================================
+   MOBILE RESPONSIVENESS FIX (Prevents UI from popping out)
+   ========================================================== */
+@media (max-width: 480px) {
+    .control-bar { padding: 12px; }
+    .controls-buttons { gap: 8px; }
+    .ctrl-btn {
+        min-width: 36px;
+        width: 36px;
+        height: 36px;
+    }
+    .ctrl-btn svg { width: 22px; height: 22px; }
+    .time-display { font-size: 12px; margin-left: 4px; }
+}
+
+
+/* ==========================================================
+   AUDIO / SUBTITLE MENU + SUBTITLE OVERLAY
+   ========================================================== */
+.player-card { position: relative; }
+.sub-overlay {
+    position: absolute; left: 0; right: 0; bottom: 7%;
+    text-align: center; pointer-events: none; z-index: 12;
+    padding: 0 8%; line-height: 1.3;
+    font-size: clamp(13px, 2.6vw, 24px); font-weight: 600; color: #fff;
+    text-shadow: 0 0 4px #000, 0 0 4px #000, 1px 1px 3px #000, -1px -1px 3px #000;
+}
+#playerMainCard:fullscreen .sub-overlay { font-size: clamp(18px, 2.8vw, 36px); bottom: 5%; }
+.track-menu {
+    display: none; position: absolute; right: 12px; bottom: 84px; z-index: 40;
+    min-width: 230px; max-width: calc(100% - 24px); max-height: calc(100% - 110px); overflow-y: auto;
+    background: rgba(11, 15, 25, 0.97); border: 1px solid rgba(29, 185, 84, 0.45);
+    border-radius: 12px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+.track-menu.open { display: block; }
+.track-head { padding: 6px 10px 8px; font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #1db954; text-transform: uppercase; }
+.track-item {
+    display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; color: #e2e8f0; cursor: pointer;
+}
+.track-item:hover { background: rgba(29, 185, 84, 0.18); }
+.track-item.sel { color: #1db954; }
+.track-item.off { opacity: 0.45; cursor: not-allowed; }
+.track-item .tick { width: 14px; flex-shrink: 0; }
+#playerMainCard:fullscreen .track-menu { bottom: 96px; }
+@media (max-width: 480px) { .track-menu { right: 8px; bottom: 70px; min-width: 200px; } }
+
+/* File Meta & Action Buttons */
+.file-meta-box {
+    text-align: center;
+    margin-top: 18px;
+    background: rgba(20, 25, 40, 0.6);
+    border: 1px solid rgba(29, 185, 84, 0.2);
+    padding: 12px 18px;
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+}
+.file-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #e2e8f0;
+    word-break: break-word;
+}
+
+.action-buttons-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.action-btn {
+    background: linear-gradient(135deg, #1e2530 0%, #151a23 100%);
+    border: 1px solid rgba(29, 185, 84, 0.3);
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #fff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.25s ease;
+}
+.action-btn:hover {
+    background: #1db954;
+    color: #0b0f19;
+    border-color: #1db954;
+    transform: translateY(-2px);
+}
+.action-btn img { height: 18px; width: 18px; object-fit: contain; }
+
+/* Toast Notification */
+#toast {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(20, 25, 40, 0.95);
+    border: 1px solid #1db954;
+    color: #fff; padding: 10px 22px; border-radius: 30px;
+    font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px); z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+
+<body>
+
+<nav><h3>🔆彡⟨ HEROFLiX ⟩彡🔆</h3></nav>
+
+<div class="main-container">
+
+    <!-- Added ID playerMainCard for Complete Fullscreen Fix -->
+    <div class="player-card" id="playerMainCard">
+        
+        <!-- Video Wrapper -->
+        <div class="video-wrapper" id="playerContainer" onclick="handleVideoClick(event)">
+            <!-- Loading Spinner Element -->
+            <div id="loadingSpinner"></div>
+
+            <video id="player" src="{{file_url}}" playsinline></video>
+            <div id="subOverlay" class="sub-overlay"></div>
+
+            <!-- ==========================================================
+               VERTICAL VOLUME SLIDER CONTAINER
+               ========================================================== -->
+            <div class="vertical-volume-container audio-fade" id="volumeContainer">
+                <input type="range" min="0" max="1" step="0.05" value="1" class="vertical-slider" id="volumeSlider" oninput="setVolume(this.value)" style="background-image: radial-gradient(circle, #fff 3px, transparent 3.5px), linear-gradient(to top, #ff5722 100%, rgba(255,255,255,0.2) 100%);">
+                <button class="volume-icon-btn" onclick="toggleMute(event)" title="Mute/Unmute">
+                    <svg id="volumeIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Separate Bottom Control Bar -->
+        <div class="control-bar" id="controlBar">
+            
+            <!-- ======================================================
+               PROGRESS BAR CONTAINER
+               ====================================================== -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="controls-buttons">
+                
+                <!-- ==================================================
+                   1. 10 SECONDS BACKWARD BUTTON
+                   ================================================== -->
+                <button class="ctrl-btn" onclick="skipBack()" title="Rewind 10s">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 2.97-2.17 5.43-5 5.91v2.02c3.95-.49 7-3.85 7-7.93 0-4.42-3.58-8-8-8zm-1.1 9.75v-3.5l-2.2 1.25v-1l2.3-1.3h.9v4.55h-1z" transform="scale(-1, 1) translate(-24, 0)" fill="#fff"/>
+                        <text x="8.0" y="15.5" font-size="7.5" font-weight="900" fill="#fff" font-family="sans-serif">10</text>
+                    </svg>
+                </button>
+
+                <!-- ==================================================
+                   2. PLAY / PAUSE BUTTON
+                   ================================================== -->
+                <button class="ctrl-btn" id="playPauseBtn" onclick="togglePlay()" title="Play/Pause">
+                    <svg id="playPauseIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#fff"/></svg>
+                </button>
+
+                <!-- ==================================================
+                   3. 10 SECONDS FORWARD BUTTON
+                   ================================================== -->
+                <button class="ctrl-btn" onclick="skipForward()" title="Forward 10s">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 2.97-2.17 5.43-5 5.91v2.02c3.95-.49 7-3.85 7-7.93 0-4.42-3.58-8-8-8zm-1.1 9.75v-3.5l-2.2 1.25v-1l2.3-1.3h.9v4.55h-1z" fill="#fff"/>
+                        <text x="8.0" y="15.5" font-size="7.5" font-weight="900" fill="#fff" font-family="sans-serif">10</text>
+                    </svg>
+                </button>
+
+                <!-- ==================================================
+                   4. VIDEO DURATION TEXT DISPLAY
+                   ================================================== -->
+                <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+
+                <!-- Audio track (shown only when the file has more than one) -->
+                <button class="ctrl-btn" id="audioBtn" style="display:none" onclick="toggleMenu('audio', event)" title="Audio track">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"/></svg>
+                </button>
+
+                <!-- Subtitles (shown only when the file has any) -->
+                <button class="ctrl-btn" id="subBtn" style="display:none" onclick="toggleMenu('sub', event)" title="Subtitles">
+                    <svg viewBox="0 0 24 24"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z"/></svg>
+                </button>
+
+                <!-- ==================================================
+                   5. FULLSCREEN TOGGLE BUTTON
+                   ================================================== -->
+                <button class="ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen">
+                    <svg id="fullscreenBtnIcon" viewBox="0 0 24 24">
+                        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="#fff"/>
+                    </svg>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- Audio / subtitle picker -->
+        <div class="track-menu" id="trackMenu"></div>
+
+    </div>
+
+    <!-- File Meta Info Box -->
+    <div class="file-meta-box">
+        <div class="file-name">[{{file_size}}] <span id="cleanName"></span></div>
+    </div>
+
+    <!-- Action Buttons Grid -->
+    <div class="action-buttons-grid">
+        <button class="action-btn" onclick="streamDownload()">
+            <img src="https://i.ibb.co/D6CnBqs/download.png"> Download
+        </button>
+        <button class="action-btn" onclick="copyStreamLink()">
+            <img src="https://i.ibb.co/RTH4vkB5/copy-link.png"> Copy Link
+        </button>
+        <button class="action-btn" onclick="vlc_player()">
+            <img src="https://i.ibb.co/px6fQs1/vlc.png"> VLC Player
+        </button>
+        <button class="action-btn" onclick="mx_player()">
+            <img src="https://i.ibb.co/41WvtQ3/mx.png"> MX Player
+        </button>
+    </div>
+
+</div>
+
+<div id="toast">Notification message</div>
+
+<script>
+const video = document.getElementById("player");
+const playerMainCard = document.getElementById("playerMainCard"); // The Complete UI target for Fullscreen
+const playerContainer = document.getElementById("playerContainer");
+const volumeContainer = document.getElementById("volumeContainer");
+const playPauseIcon = document.getElementById("playPauseIcon");
+const fullscreenBtnIcon = document.getElementById("fullscreenBtnIcon");
+const progressBar = document.getElementById("progressBar");
+const progressContainer = document.getElementById("progressContainer");
+const timeDisplay = document.getElementById("timeDisplay");
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeIcon = document.getElementById("volumeIcon");
+const loadingSpinner = document.getElementById("loadingSpinner");
+const toast = document.getElementById("toast");
+let hideTimeout;
+
+function showToast(message) {
+    toast.innerText = message;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+function cleanFileName(name) {
+    if (!name) return "Unknown File";
+    name = name.trim();
+    name = name.replace(/(\.(mkv|mp4|avi|mov|wmv|flv)).*$/i, "$1");
+    name = name.replace(/^@[\w_]+(\s*-\\s*)*/i, "").trim();
+    name = name.replace(/^@[\w_]+-/, "").trim();
+    name = name.replace(/^[^\w(]+/, "").trim();
+    return name.trim();
+}
+document.getElementById("cleanName").innerText = cleanFileName("{{file_name}}");
+
+/* --- Auto-Hide Audio Controller Only (5 seconds) --- */
+function showAudioController() {
+    volumeContainer.classList.remove("hide-audio");
+    clearTimeout(hideTimeout);
+    if (!video.paused) {
+        hideTimeout = setTimeout(() => {
+            volumeContainer.classList.add("hide-audio");
+        }, 5000);
+    }
+}
+
+playerContainer.addEventListener("mousemove", showAudioController);
+playerContainer.addEventListener("touchstart", showAudioController);
+
+/* --- Auto Play on Link Open --- */
+window.addEventListener("DOMContentLoaded", () => {
+    video.play().catch(() => {
+        // Autoplay policy fallback (muted start if blocked)
+        video.muted = true;
+        video.play();
+    });
+});
+
+/* --- Buffering & Loading Spinner Control --- */
+video.addEventListener("waiting", () => {
+    loadingSpinner.style.display = "block";
+    volumeContainer.classList.remove("hide-audio"); // Show audio controller while loading
+});
+video.addEventListener("playing", () => {
+    loadingSpinner.style.display = "none";
+});
+video.addEventListener("canplay", () => {
+    loadingSpinner.style.display = "none";
+});
+
+/* --- Click on Video to Play/Pause --- */
+function handleVideoClick(e) {
+    if (e.target.closest('#volumeContainer')) return;
+    if (menuKind) { closeMenu(); return; }
+    togglePlay();
+}
+
+/* --- Play / Pause State Toggle --- */
+function togglePlay() {
+    if (video.paused) {
+        video.play();
+    } else {
+        video.pause();
+    }
+}
+
+video.addEventListener("play", () => {
+    playPauseIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="#fff"/>';
+    showAudioController();
+});
+
+video.addEventListener("pause", () => {
+    playPauseIcon.innerHTML = '<path d="M8 5v14l11-7z" fill="#fff"/>';
+    volumeContainer.classList.remove("hide-audio");
+    clearTimeout(hideTimeout);
+});
+
+/* ======================================================================
+   TIMELINE
+   When a different audio track is chosen the server sends a stream that starts at
+   `startOffset` seconds, so every time shown / sought is absolute:
+   startOffset + video.currentTime.
+   ====================================================================== */
+const FILE_ID = "{{file_url}}".split("/").pop();
+const DIRECT_URL = "{{file_url}}";
+let startOffset = 0, totalDuration = 0, audioIdx = null, loadToken = 0, seekTimer;
+let isDragging = false;
+
+function absTime() { return startOffset + (video.currentTime || 0); }
+function totalTime() {
+    if (audioIdx === null && isFinite(video.duration) && video.duration > 0) return video.duration;
+    return totalDuration || 0;
+}
+
+function updateProgress() {
+    const total = totalTime();
+    if (isDragging || !total) return;
+    progressBar.style.width = Math.min(100, (absTime() / total) * 100) + "%";
+    timeDisplay.innerText = formatTime(absTime()) + " / " + formatTime(total);
+}
+video.addEventListener("timeupdate", updateProgress);
+video.addEventListener("loadedmetadata", updateProgress);
+
+function formatTime(seconds) {
+    seconds = Math.max(0, seconds || 0);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const ss = (s < 10 ? "0" : "") + s;
+    return h > 0 ? h + ":" + (m < 10 ? "0" : "") + m + ":" + ss : m + ":" + ss;
+}
+
+function seekTo(t) {
+    const total = totalTime();
+    t = Math.max(0, total ? Math.min(t, total - 0.5) : t);
+    if (audioIdx === null) { video.currentTime = t; return; }
+    clearTimeout(seekTimer);                               // switched-audio stream: reload at t
+    seekTimer = setTimeout(() => loadStream(audioIdx, t), 250);   // debounced so dragging doesn't spam
+}
+
+function seek(e) {
+    const total = totalTime();
+    if (!total) return;
+    const rect = progressContainer.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    progressBar.style.width = (pos * 100) + "%";
+    timeDisplay.innerText = formatTime(pos * total) + " / " + formatTime(total);
+    seekTo(pos * total);
+}
+
+progressContainer.addEventListener("click", (e) => {
+    seek(e);
+    showAudioController();
+});
+
+progressContainer.addEventListener("mousedown", (e) => { isDragging = true; seek(e); });
+progressContainer.addEventListener("touchstart", (e) => { isDragging = true; seek(e); });
+
+document.addEventListener("mousemove", (e) => {
+    if (isDragging) seek(e);
+});
+document.addEventListener("touchmove", (e) => {
+    if (isDragging) seek(e);
+});
+
+document.addEventListener("mouseup", () => { isDragging = false; });
+document.addEventListener("touchend", () => { isDragging = false; });
+
+/* Start (or restart) playback. audio === null -> plain original stream, otherwise the
+   server-side stream with that audio track, beginning at (about) t seconds. */
+async function loadStream(audio, t) {
+    const token = ++loadToken;
+    loadingSpinner.style.display = "block";
+    let start = 0;
+    if (audio !== null && t > 0) {
+        start = t;
+        try {   // ask where the nearest keyframe is so subtitles/progress stay in sync
+            const r = await fetch(`/seekpoint/${FILE_ID}?t=${t}`);
+            if (r.ok) start = (await r.json()).start;
+        } catch (e) {}
+        if (token !== loadToken) return;                    // a newer request replaced this one
+    }
+    if (audio === null) {
+        startOffset = 0;
+        video.src = DIRECT_URL;
+        video.addEventListener("loadedmetadata", () => { if (t > 0) video.currentTime = t; }, { once: true });
+    } else {
+        startOffset = start;
+        video.src = `/audio/${FILE_ID}?a=${audio}&t=${start}`;
+    }
+    video.play().catch(() => {});
+}
+
+video.addEventListener("error", () => {
+    if (audioIdx === null) return;
+    showToast("⚠️ Couldn't switch audio for this video. Back to original.");
+    const t = absTime();
+    audioIdx = null;
+    loadStream(null, t);
+});
+
+/* ======================================================================
+   AUDIO + SUBTITLE PICKER
+   ====================================================================== */
+const trackMenu = document.getElementById("trackMenu");
+const audioBtn = document.getElementById("audioBtn");
+const subBtn = document.getElementById("subBtn");
+const subOverlay = document.getElementById("subOverlay");
+let tracks = null, subIdx = null, subCues = [], subCache = {}, menuKind = null;
+
+const LANGS = { eng: "English", hin: "Hindi", jpn: "Japanese", tam: "Tamil", tel: "Telugu", mal: "Malayalam",
+    kan: "Kannada", ben: "Bengali", mar: "Marathi", pan: "Punjabi", urd: "Urdu", kor: "Korean", spa: "Spanish",
+    fre: "French", fra: "French", ger: "German", deu: "German", ita: "Italian", rus: "Russian", por: "Portuguese",
+    chi: "Chinese", zho: "Chinese", ara: "Arabic", tha: "Thai", ind: "Indonesian", tur: "Turkish", vie: "Vietnamese" };
+
+function langName(code) {
+    if (!code || code === "und") return "";
+    return LANGS[code.toLowerCase()] || code.toUpperCase();
+}
+function chLabel(n) { return n === 1 ? "mono" : n === 2 ? "2.0" : n === 6 ? "5.1" : n === 8 ? "7.1" : n + "ch"; }
+function trackLabel(t, kind) {
+    const lang = langName(t.lang);
+    const parts = [];
+    if (lang && !(t.title || "").toLowerCase().includes(lang.toLowerCase())) parts.push(lang);
+    if (t.title) parts.push(t.title);
+    if (kind === "audio") parts.push((t.codec || "").toUpperCase() + (t.channels ? " " + chLabel(t.channels) : ""));
+    return parts.filter(Boolean).join(" · ") || ("Track " + (t.n + 1));
+}
+
+function closeMenu() { trackMenu.classList.remove("open"); menuKind = null; }
+
+function toggleMenu(kind, e) {
+    if (e) e.stopPropagation();
+    if (menuKind === kind) { closeMenu(); return; }
+    if (!tracks) return;
+    menuKind = kind;
+    trackMenu.innerHTML = "";
+    const head = document.createElement("div");
+    head.className = "track-head";
+    head.textContent = kind === "audio" ? "Audio" : "Subtitles";
+    trackMenu.appendChild(head);
+
+    const add = (label, selected, onClick, disabled) => {
+        const row = document.createElement("div");
+        row.className = "track-item" + (selected ? " sel" : "") + (disabled ? " off" : "");
+        const tick = document.createElement("span");
+        tick.className = "tick";
+        tick.textContent = selected ? "✓" : "";
+        const text = document.createElement("span");
+        text.textContent = label;
+        row.append(tick, text);
+        if (!disabled) row.addEventListener("click", (ev) => { ev.stopPropagation(); closeMenu(); onClick(); });
+        trackMenu.appendChild(row);
+    };
+
+    if (kind === "audio") {
+        tracks.audio.forEach(a => add(trackLabel(a, "audio") + (a.n === 0 ? "  (original)" : ""),
+            (audioIdx === null ? 0 : audioIdx) === a.n, () => chooseAudio(a.n)));
+    } else {
+        add("Off", subIdx === null, () => chooseSub(null));
+        tracks.subs.forEach(s => add(trackLabel(s, "sub") + (s.text ? "" : "  (image based, not supported)"),
+            subIdx === s.n, () => chooseSub(s.n), !s.text));
+    }
+    trackMenu.classList.add("open");
+}
+
+document.addEventListener("click", (e) => {
+    if (!e.target.closest("#trackMenu") && !e.target.closest("#audioBtn") && !e.target.closest("#subBtn")) closeMenu();
+});
+
+function chooseAudio(n) {
+    if (n === (audioIdx === null ? 0 : audioIdx)) return;
+    const t = absTime();
+    showToast("🔊 Switching audio...");
+    audioIdx = n === 0 ? null : n;      // track 0 is what the browser plays by itself
+    loadStream(audioIdx, t);
+}
+
+async function chooseSub(n) {
+    if (n === null) { subIdx = null; subCues = []; return; }
+    if (!subCache[n]) {
+        showToast("💬 Loading subtitles... (first time can take a minute)");
+        try {
+            const r = await fetch(`/sub/${FILE_ID}/${n}`);
+            if (!r.ok) throw new Error("http " + r.status);
+            subCache[n] = parseVTT(await r.text());
+        } catch (e) {
+            showToast("⚠️ Subtitles unavailable");
+            return;
+        }
+    }
+    subIdx = n;
+    subCues = subCache[n];
+}
+
+function cueHtml(t) {
+    t = t.replace(/\{\\[^}]*\}/g, "");                                  // leftover ASS {\an8} style tags
+    t = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    t = t.replace(/&lt;(\/?)(i|b|u)&gt;/gi, "<$1$2>");                     // keep simple styling only
+    t = t.replace(/&lt;\/?[^&]*?&gt;/g, "");                              // drop every other tag
+    return t.replace(/\n/g, "<br>");
+}
+
+function parseVTT(text) {
+    const out = [];
+    const ts = (s) => {
+        const m = s.trim().match(/^(?:(\d+):)?(\d+):(\d+)[.,](\d+)/);
+        return m ? (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + (+m[3]) + (+("0." + m[4])) : NaN;
+    };
+    for (const block of text.replace(/\r/g, "").split(/\n{2,}/)) {
+        const lines = block.split("\n");
+        const i = lines.findIndex(l => l.includes("-->"));
+        if (i < 0) continue;
+        const [a, b] = lines[i].split("-->");
+        const s = ts(a), e = ts(b);
+        if (isNaN(s) || isNaN(e)) continue;
+        out.push({ s, e, html: cueHtml(lines.slice(i + 1).join("\n")) });
+    }
+    return out.sort((x, y) => x.s - y.s);
+}
+
+let lastSubHtml = "";
+setInterval(() => {
+    let html = "";
+    if (subCues.length) {
+        const t = absTime();
+        html = subCues.filter(c => c.s <= t && t < c.e).map(c => c.html).join("<br>");
+    }
+    if (html !== lastSubHtml) { subOverlay.innerHTML = html; lastSubHtml = html; }
+}, 120);
+
+/* Track list is fetched a moment after the video starts, so playback always gets priority. */
+async function loadTracks() {
+    try {
+        const r = await fetch(`/tracks/${FILE_ID}`);
+        if (!r.ok) return;
+        tracks = await r.json();
+    } catch (e) { return; }
+    if (tracks.duration) { totalDuration = tracks.duration; updateProgress(); }
+    audioBtn.style.display = tracks.audio.length > 1 ? "flex" : "none";
+    subBtn.style.display = tracks.subs.length ? "flex" : "none";
+}
+window.addEventListener("load", () => setTimeout(loadTracks, 1500));
+
+/* --- Volume Controls --- */
+function setVolume(val) {
+    video.volume = val;
+    video.muted = (val == 0);
+    updateVolumeIcon(val);
+    showAudioController();
+}
+
+function toggleMute(e) {
+    if (e) e.stopPropagation();
+    if (video.volume > 0) {
+        video.dataset.lastVol = video.volume;
+        video.volume = 0;
+        volumeSlider.value = 0;
+        updateVolumeIcon(0);
+    } else {
+        let prev = video.dataset.lastVol || 1;
+        video.volume = prev;
+        volumeSlider.value = prev;
+        updateVolumeIcon(prev);
+    }
+    showAudioController();
+}
+
+function updateVolumeIcon(val) {
+    if (val == 0) {
+        volumeIcon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
+    } else {
+        volumeIcon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+    }
+}
+
+function skipBack() { seekTo(absTime() - 10); showAudioController(); }
+function skipForward() { seekTo(absTime() + 10); showAudioController(); }
+
+/* --- Fixed Fullscreen Logic (Includes Control Bar & Swaps Icon) --- */
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        playerMainCard.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+document.addEventListener("fullscreenchange", () => {
+    if (document.fullscreenElement) {
+        fullscreenBtnIcon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" fill="#fff"/>'; // Compress icon
+    } else {
+        fullscreenBtnIcon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" fill="#fff"/>'; // Expand icon
+    }
+});
+
+playerContainer.addEventListener("dblclick", toggleFullscreen);
+
+/* --- Keyboard Shortcuts --- */
+document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+    else if (e.code === "ArrowRight") { skipForward(); }
+    else if (e.code === "ArrowLeft") { skipBack(); }
+    else if (e.code === "KeyF") { toggleFullscreen(); }
+    else if (e.code === "KeyM") { toggleMute(); }
+});
+
+/* --- Actions --- */
+function streamDownload() {
+    let url = window.location.href.replace("/watch/", "/dl/").replace("/view/", "/dl/");
+    showToast("⬇️ Download Starting...");
+    window.location.href = url;
+}
+function copyStreamLink() {
+    navigator.clipboard.writeText(window.location.href);
+    showToast("🔗 Link Copied to Clipboard!");
+}
+function mx_player() {
+    var url = "{{file_url}}";
+    window.location.href = `intent:${encodeURIComponent(url)}#Intent;action=android.intent.action.VIEW;type=video/*;package=com.mxtech.videoplayer.ad;S.title=${encodeURIComponent("{{file_name}}")};end`;
+}
+function vlc_player() {
+    var url = "{{file_url}}";
+    window.location.href = `intent:${encodeURIComponent(url)}#Intent;action=android.intent.action.VIEW;type=video/*;package=org.videolan.vlc;S.title=${encodeURIComponent("{{file_name}}")};end`;
+}
+</script>
+
+</body>
+</html>

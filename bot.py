@@ -5,6 +5,7 @@ Owner commands: /status /ban /unban /broadcast /del
 Settings live in config.py.
 """
 import asyncio
+import html
 import logging
 import re
 import time
@@ -54,24 +55,33 @@ def clean_filename(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip()
 
 
+def size_label(size) -> str:
+    """143.89 MB / 1.4 GB style label used in file names."""
+    size = float(size or 0)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024 or unit == "TB":
+            return f"{size:.2f} {unit}" if unit in ("MB", "GB", "TB") else f"{size:.0f} {unit}"
+        size /= 1024
+
+
+def display_name(name: str, size) -> str:
+    """[143.89 MB] The Court S01E52 ...  (no symbols, no @usernames)"""
+    return f"[{size_label(size)}] {clean_filename(name)}".strip()
+
+
 START_TEXT = """<b>🔆 [ DOWNLOAD / STREAM ] 🔆
 ⌬──━━━━━━━━━━━━━━──⌬
 ♻ Send me any file and get a fast Download / Stream link!</b>"""
 
-STREAM_TEXT = """<b>[ DOWNLOAD / STREAM ]
-⌬──━━━━━━━━━━──⌬
-🔆 [ {} ] {}
+STREAM_TEXT = """<b>🍿 <a href="{link}">{title}</a>
 
-♻️ Dᴏᴡɴʟᴏᴀᴅ Link ➜ {}
+♻️ Dᴏᴡɴʟᴏᴀᴅ Link ➜ {dl}
 
-🌟 Sᴛʀᴇᴀᴍ Link ➜ {}</b>"""
+🌟 Sᴛʀᴇᴀᴍ Link ➜ {page}</b>"""
 
-STREAM_TEXT_X = """<b>[ DOWNLOAD / STREAM ]
-⌬──━━━━━━━━━━──⌬
-🔆 [ {} ] {}
+STREAM_TEXT_X = """<b>🍿 <a href="{link}">{title}</a>
 
-♻️ Dᴏᴡɴʟᴏᴀᴅ Link ➜ {}
-📒 MediaInfo:- Available via Bot / Instant View</b>"""
+♻️ Dᴏᴡɴʟᴏᴀᴅ Link ➜ {dl}</b>"""
 
 BAN_TEXT = "__Sᴏʀʀʏ Sɪʀ, Yᴏᴜ ᴀʀᴇ Bᴀɴɴᴇᴅ ᴛᴏ ᴜsᴇ ᴍᴇ.__\n\n**[Cᴏɴᴛᴀᴄᴛ Dᴇᴠᴇʟᴏᴘᴇʀ](tg://user?id={}) Tʜᴇʏ Wɪʟʟ Hᴇʟᴘ Yᴏᴜ**"
 
@@ -84,15 +94,16 @@ START_BUTTONS = InlineKeyboardMarkup(
 
 
 def make_links(db_id, name: str, size, mime: str):
-    """Returns (reply_markup, text) with stream / download / mediainfo links."""
+    """Returns (reply_markup, text): the file name is a link that reopens this file in the bot."""
     base = base_url()
     page, dl, info = f"{base}watch/{db_id}", f"{base}dl/{db_id}", f"{base}mediainfo/{db_id}"
-    name, size = clean_filename(name), humanbytes(size)
+    link = f"https://telegram.me/{FileStream.username}?start={db_id}"
+    title = html.escape(display_name(name, size))
     if "video" in mime:
-        text = STREAM_TEXT.format(size, name, dl, page)
+        text = STREAM_TEXT.format(link=link, title=title, dl=dl, page=page)
         rows = [[InlineKeyboardButton("sᴛʀᴇᴀᴍ", url=page), InlineKeyboardButton("ᴅᴏᴡɴʟᴏᴀᴅ", url=dl)]]
     else:
-        text = STREAM_TEXT_X.format(size, name, dl)
+        text = STREAM_TEXT_X.format(link=link, title=title, dl=dl)
         rows = [[InlineKeyboardButton("ᴅᴏᴡɴʟᴏᴀᴅ", url=dl)]]
     rows.append([InlineKeyboardButton("📄 ᴍᴇᴅɪᴀɪɴғᴏ ʀᴇᴘᴏʀᴛ", url=info)])
     return InlineKeyboardMarkup(rows), text
@@ -202,11 +213,20 @@ async def allowed(message) -> bool:
 
 @FileStream.on_message(filters.command("start") & filters.private)
 async def start(bot, message):
-    if await allowed(message):
-        await message.reply_text(
-            START_TEXT, parse_mode=ParseMode.HTML, disable_web_page_preview=True,
-            reply_markup=START_BUTTONS,
-        )
+    if not await allowed(message):
+        return
+    if len(message.command) > 1:  # opened from a file-name link: hand the file back with its links
+        try:
+            doc = await db.get_file(message.command[1])
+            markup, text = make_links(doc["_id"], doc["file_name"], doc["file_size"], doc["mime_type"])
+            await message.reply_cached_media(doc["file_id"], caption=text, parse_mode=ParseMode.HTML, reply_markup=markup, quote=True)
+            return
+        except Exception:
+            pass  # unknown / expired link: fall through to the normal welcome
+    await message.reply_text(
+        START_TEXT, parse_mode=ParseMode.HTML, disable_web_page_preview=True,
+        reply_markup=START_BUTTONS,
+    )
 
 
 @FileStream.on_message(filters.private & (filters.document | filters.video), group=4)

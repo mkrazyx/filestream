@@ -40,16 +40,6 @@ class Streaming:
     BG_PREFETCH = int(env.get("BG_PREFETCH", "2"))           # chunks fetched ahead by background work
 
 
-class Player:
-    """Web player audio-track / subtitle switching (uses ffmpeg, runs at lowest CPU priority)."""
-    REMUX_LIMIT = int(env.get("REMUX_LIMIT", "2"))           # viewers using a switched audio track at once
-    EXTRACT_LIMIT = int(env.get("EXTRACT_LIMIT", "1"))       # subtitle extractions at once (reads the whole file once)
-    SUBS_AUTO = env.get("SUBS_AUTO", "1") == "1"             # extract subtitles in the background when a video is opened
-    SUBS_MAX_GB = float(env.get("SUBS_MAX_GB", "8"))         # skip automatic extraction for files bigger than this
-    AUDIO_CODEC = str(env.get("REMUX_AUDIO_CODEC", "aac"))   # switched audio is re-encoded to this (browsers need aac)
-    AUDIO_BITRATE = str(env.get("REMUX_AUDIO_BITRATE", "160k"))
-
-
 def base_url() -> str:
     """Public base URL, always https and with a trailing slash."""
     host = Server.FQDN.split("://")[-1].rstrip("/")

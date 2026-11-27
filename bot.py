@@ -65,21 +65,21 @@ def size_label(size) -> str:
 
 
 def display_name(name: str, size) -> str:
-    """[143.89 MB] The Court S01E52 ...  (no symbols, no @usernames)"""
-    return f"[{size_label(size)}] {clean_filename(name)}".strip()
+    """[ 143.89 MB ] The Court S01E52 ...  (no symbols, no @usernames)"""
+    return f"[ {size_label(size)} ] {clean_filename(name)}".strip()
 
 
 START_TEXT = """<b>🔆 [ DOWNLOAD / STREAM ] 🔆
 ⌬──━━━━━━━━━━━━━━──⌬
 ♻ Send me any file and get a fast Download / Stream link!</b>"""
 
-STREAM_TEXT = """<b>🍿 <a href="{link}">{title}</a>
+STREAM_TEXT = """<b>🔆 [ {size} ] </b><a href="{link}"><b>{title}</b></a><b>
 
 ♻️ Dᴏᴡɴʟᴏᴀᴅ Link ➜ {dl}
 
 🌟 Sᴛʀᴇᴀᴍ Link ➜ {page}</b>"""
 
-STREAM_TEXT_X = """<b>🍿 <a href="{link}">{title}</a>
+STREAM_TEXT_X = """<b>🔆 [ {size} ] </b><a href="{link}"><b>{title}</b></a><b>
 
 ♻️ Dᴏᴡɴʟᴏᴀᴅ Link ➜ {dl}</b>"""
 
@@ -94,16 +94,15 @@ START_BUTTONS = InlineKeyboardMarkup(
 
 
 def make_links(db_id, name: str, size, mime: str):
-    """Returns (reply_markup, text): the file name is a link that reopens this file in the bot."""
+    """Returns (reply_markup, text): the file name is a link to your channel."""
     base = base_url()
     page, dl, info = f"{base}watch/{db_id}", f"{base}dl/{db_id}", f"{base}mediainfo/{db_id}"
-    link = f"https://telegram.me/{FileStream.username}?start={db_id}"
-    title = html.escape(display_name(name, size))
+    link, title, size = Telegram.UPDATES_CHANNEL, html.escape(clean_filename(name)), size_label(size)
     if "video" in mime:
-        text = STREAM_TEXT.format(link=link, title=title, dl=dl, page=page)
+        text = STREAM_TEXT.format(size=size, link=link, title=title, dl=dl, page=page)
         rows = [[InlineKeyboardButton("sᴛʀᴇᴀᴍ", url=page), InlineKeyboardButton("ᴅᴏᴡɴʟᴏᴀᴅ", url=dl)]]
     else:
-        text = STREAM_TEXT_X.format(link=link, title=title, dl=dl)
+        text = STREAM_TEXT_X.format(size=size, link=link, title=title, dl=dl)
         rows = [[InlineKeyboardButton("ᴅᴏᴡɴʟᴏᴀᴅ", url=dl)]]
     rows.append([InlineKeyboardButton("📄 ᴍᴇᴅɪᴀɪɴғᴏ ʀᴇᴘᴏʀᴛ", url=info)])
     return InlineKeyboardMarkup(rows), text
@@ -215,14 +214,6 @@ async def allowed(message) -> bool:
 async def start(bot, message):
     if not await allowed(message):
         return
-    if len(message.command) > 1:  # opened from a file-name link: hand the file back with its links
-        try:
-            doc = await db.get_file(message.command[1])
-            markup, text = make_links(doc["_id"], doc["file_name"], doc["file_size"], doc["mime_type"])
-            await message.reply_cached_media(doc["file_id"], caption=text, parse_mode=ParseMode.HTML, reply_markup=markup, quote=True)
-            return
-        except Exception:
-            pass  # unknown / expired link: fall through to the normal welcome
     await message.reply_text(
         START_TEXT, parse_mode=ParseMode.HTML, disable_web_page_preview=True,
         reply_markup=START_BUTTONS,

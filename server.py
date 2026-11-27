@@ -373,7 +373,7 @@ h1{font-size:16px;font-weight:600;margin:0 0 14px;word-break:break-word}
 .card h2{font-size:15px;margin:0 0 8px}.card div{padding:2px 0}
 pre{background:#16181b;border:1px solid #2a2e33;border-radius:12px;padding:14px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.45}
 </style></head><body><div class="w">
-<h1>{{ title }}</h1>
+<h1>🔆 {{ title }}</h1>
 <div class="card"><h2>⚡ Quick Media Summary</h2>
 <div>🎬 Resolution: {{ s.resolution or "N/A" }}</div><div>🎞️ Video Codec: {{ s.codec or "N/A" }}</div>
 <div>🎨 Bit Depth: {{ s.bit_depth or "N/A" }}</div><div>⏱️ Duration: {{ s.duration or "N/A" }}</div>
